@@ -1,6 +1,6 @@
 use http_body_util::Full;
 use hyper::body::Bytes;
-use hyper::header::CONTENT_TYPE;
+use hyper::header::{CACHE_CONTROL, CONTENT_TYPE, X_CONTENT_TYPE_OPTIONS};
 use hyper::{Request, Response};
 
 use shared::Metadata;
@@ -36,9 +36,23 @@ pub async fn handle_download(
         let mut v: Vec<u8> = Vec::with_capacity(file.metadata().await?.len() as usize);
         file.read_to_end(&mut v).await?;
 
+        // Guess viable file name
+        let mime: mime_guess::Mime = metadata.content_type.parse()?;
+        let extension = *mime_guess::get_mime_extensions(&mime)
+            .unwrap_or(&["bin"])
+            .first()
+            .unwrap_or(&"bin");
+        let _filename = format!("{id}.{extension}");
+
         // Build response
         let resp = Response::builder()
             .header(CONTENT_TYPE, metadata.content_type)
+            // Enable caching
+            .header(CACHE_CONTROL, "max-age=31536000, immutable")
+            // Ignore browsers guessing the content type
+            .header(X_CONTENT_TYPE_OPTIONS, "nosniff")
+            // Auto download
+            //.header(CONTENT_DISPOSITION,format!("attachment; filename=\"{filename}\""),)
             .body(Full::new(Bytes::from(v)))?;
 
         return Ok(resp);

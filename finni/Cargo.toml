@@ -19,3 +19,4 @@ tokio = { version = "1.35.0", features = [
     "rt-multi-thread",
 ] }
 shared = { path = "../shared" }
+mime_guess = { workspace = true }
