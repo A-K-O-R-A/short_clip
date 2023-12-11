@@ -216,6 +216,7 @@ dependencies = [
  "http-body-util",
  "hyper",
  "hyper-util",
+ "mime_guess",
  "rustc-hash",
  "shared",
  "tokio",
@@ -895,6 +896,8 @@ dependencies = [
  "arboard",
  "mime_guess",
  "png",
+ "serde",
+ "serde_json",
  "ureq",
  "xcb",
 ]
