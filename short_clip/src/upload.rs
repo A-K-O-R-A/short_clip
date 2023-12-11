@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use arboard::{Clipboard, ImageData};
 
-static HOST: &'static str = "http://localhost:3000/";
+use crate::CONFIG;
 
 pub fn handle_hotkey() -> Result<(), Box<dyn std::error::Error>> {
     let mut clipboard = Clipboard::new()?;
@@ -64,8 +64,10 @@ pub fn handle_hotkey() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn upload_contents(data: &[u8], content_type: &str) -> Option<String> {
-    let result = ureq::post(HOST)
-        .set("authorization", "uwu")
+    let config = CONFIG.get().unwrap();
+
+    let result = ureq::post(&config.host)
+        .set("authorization", &config.token)
         .set("Content-Type", content_type)
         .send_bytes(data);
 

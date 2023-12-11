@@ -4,10 +4,20 @@ use xcb::x;
 use xcb::x::ModMask;
 // Many xcb functions return a `xcb::Result` or compatible result.
 
+use std::sync::OnceLock;
+
+mod config;
 mod upload;
+
+use config::{load_config, Config};
 use upload::handle_hotkey;
 
+pub static CONFIG: OnceLock<Config> = OnceLock::new();
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Load config
+    CONFIG.set(load_config()).unwrap();
+
     // Connect to the X server.
     let (conn, screen_num) = xcb::Connection::connect(None)?;
 
