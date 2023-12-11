@@ -1,11 +1,13 @@
-use arboard::Clipboard;
-
 // we import the necessary modules (only the core X module in this application).
 use xcb::x;
 // we need to import the `Xid` trait for the `resource_id` call down there.
 use xcb::x::ModMask;
 // Many xcb functions return a `xcb::Result` or compatible result.
-fn main() -> xcb::Result<()> {
+
+mod upload;
+use upload::handle_hotkey;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Connect to the X server.
     let (conn, screen_num) = xcb::Connection::connect(None)?;
 
@@ -41,18 +43,11 @@ fn main() -> xcb::Result<()> {
     // We enter the main event loop
     loop {
         match conn.wait_for_event()? {
-            xcb::Event::X(x::Event::KeyPress(ev)) => {
-                println!("state {:?}", ev.state());
-                println!("{}", ev.detail());
-
-                let mut clipboard = Clipboard::new().unwrap();
-                println!("Clipboard text was: {}", clipboard.get_text().unwrap());
+            xcb::Event::X(x::Event::KeyPress(_ev)) => {
+                handle_hotkey()?;
 
                 // The Strg + U Key was pressed
                 conn.flush()?;
-            }
-            xcb::Event::X(x::Event::KeyRelease(ev)) => {
-                println!("{}", ev.detail());
             }
             xcb::Event::X(x::Event::ClientMessage(ev)) => {
                 // We have received a message from the server
@@ -62,18 +57,3 @@ fn main() -> xcb::Result<()> {
         }
     }
 }
-
-/*
-fn main() {
-
-    let mut clipboard = Clipboard::new().unwrap();
-    println!("Clipboard text was: {}", clipboard.get_text().unwrap());
-
-    let the_string = "Hello, world!";
-    clipboard.set_text(the_string).unwrap();
-    println!("But now the clipboard text should be: \"{}\"", the_string);
-
-    std::thread::sleep(std::time::Duration::from_millis(100));
-    drop(clipboard);
-}
-*/
