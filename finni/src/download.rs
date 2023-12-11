@@ -1,6 +1,6 @@
 use http_body_util::Full;
 use hyper::body::Bytes;
-use hyper::header::{CACHE_CONTROL, CONTENT_TYPE, X_CONTENT_TYPE_OPTIONS};
+use hyper::header::{CACHE_CONTROL, CONTENT_TYPE, LOCATION, X_CONTENT_TYPE_OPTIONS};
 use hyper::{Request, Response};
 
 use shared::Metadata;
@@ -35,6 +35,22 @@ pub async fn handle_download(
         let mut file = File::open(entry.path()).await?;
         let mut v: Vec<u8> = Vec::with_capacity(file.metadata().await?.len() as usize);
         file.read_to_end(&mut v).await?;
+
+        // Check if this is a URL
+        if metadata.content_type == "text/uri-list" {
+            let url = String::from_utf8(v)?;
+
+            let resp = Response::builder()
+                // Temporary Redirect
+                .status(307)
+                .header(LOCATION, &url)
+                .header(CONTENT_TYPE, metadata.content_type)
+                // Ignore browsers guessing the content type
+                .header(X_CONTENT_TYPE_OPTIONS, "nosniff")
+                .body(Full::new(Bytes::from(url.into_bytes())))?;
+
+            return Ok(resp);
+        }
 
         // Guess viable file name
         let mime: mime_guess::Mime = metadata.content_type.parse()?;

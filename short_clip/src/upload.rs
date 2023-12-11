@@ -41,7 +41,13 @@ pub fn handle_hotkey() -> Result<(), Box<dyn std::error::Error>> {
 
                 (content_type, data)
             } else {
-                content_type = "text/plain".to_owned();
+                // Check if the content is a valid url
+                if let Ok(_) = url::Url::parse(&content) {
+                    // Let the backend know that this is a url
+                    content_type = "text/uri-list".to_owned();
+                } else {
+                    content_type = "text/plain".to_owned();
+                }
 
                 (content_type, content.into_bytes())
             }
