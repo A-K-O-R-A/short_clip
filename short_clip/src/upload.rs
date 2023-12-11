@@ -12,15 +12,17 @@ pub fn handle_hotkey() -> Result<(), Box<dyn std::error::Error>> {
         if let Ok(image_data) = clipboard.get_image() {
             let content_type = "image/png".to_owned();
             let data = image_data_to_png(image_data)?;
+            /*
             println!(
                 "Clipboard contained image, converted to {} bytes",
                 data.len()
             );
+             */
 
             (content_type, data)
         } else if let Ok(content) = clipboard.get_text() {
             let content_type;
-            println!("Clipboard text was: {}", content);
+            // println!("Clipboard text was: {}", content);
 
             if content.starts_with("file://") {
                 let path = PathBuf::from(&content[7..]);
@@ -52,6 +54,7 @@ pub fn handle_hotkey() -> Result<(), Box<dyn std::error::Error>> {
                 (content_type, content.into_bytes())
             }
         } else {
+            println!("Clipboard empty");
             // No content in clipboard
             return Ok(());
         }
