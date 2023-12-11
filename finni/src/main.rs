@@ -74,27 +74,35 @@ async fn handle_req(
 async fn handle_download(
     req: Request<hyper::body::Incoming>,
 ) -> Result<Response<Full<Bytes>>, Box<dyn std::error::Error>> {
+    // Extract id
     let path = req.uri().path();
     if path.len() < 2 {
         return Ok(not_found());
     }
-    let short = path[1..].to_lowercase();
+    let id = &path[1..];
+
     let mut dir_entries = tokio::fs::read_dir(content_path()).await?;
 
-    while let Some(e) = dir_entries.next_entry().await? {
-        let file_name = e.file_name().to_str().unwrap().to_lowercase();
-        let (name, ext) = file_name.split_once(".").unwrap();
-        if name == short {
-            let mut f = File::open(e.path()).await?;
-            let mut v: Vec<u8> = Vec::with_capacity(f.metadata().await?.len() as usize);
-            f.read_to_end(&mut v).await?;
-
-            let resp = Response::builder()
-                .header("Content-Type", ext)
-                .body(Full::new(Bytes::from(v)))?;
-
-            return Ok(resp);
+    while let Some(entry) = dir_entries.next_entry().await? {
+        if entry.file_name() != id {
+            continue;
         }
+
+        // Retrieve metadata to set Content-Type
+        let metadata = tokio::fs::read(entry.path().with_extension("json")).await?;
+        let metadata = Metadata::from_slice(&metadata)?;
+
+        // Read data
+        let mut file = File::open(entry.path()).await?;
+        let mut v: Vec<u8> = Vec::with_capacity(file.metadata().await?.len() as usize);
+        file.read_to_end(&mut v).await?;
+
+        // Build response
+        let resp = Response::builder()
+            .header(CONTENT_TYPE, metadata.content_type)
+            .body(Full::new(Bytes::from(v)))?;
+
+        return Ok(resp);
     }
 
     Ok(not_found())
@@ -128,13 +136,13 @@ async fn handle_upload(
     let hash = hasher.finish();
 
     // Create short alias for this data
-    let short = general_purpose::URL_SAFE_NO_PAD.encode(hash.to_le_bytes());
+    let id = general_purpose::URL_SAFE_NO_PAD.encode(hash.to_le_bytes());
 
-    let data_path = content_path().join(&short);
+    let data_path = content_path().join(&id);
     let metadata_path = data_path.with_extension("json");
 
     // Only write file if it wasnt already saved
-    if let Err(_) = File::open(&data_path).await {
+    if !data_path.try_exists()? {
         // Save metadata to associate content type
         let metadata = Metadata::new(&auth, &content_type);
         tokio::fs::write(&data_path, raw_data).await?;
@@ -142,7 +150,7 @@ async fn handle_upload(
     }
 
     // Return the newly cerated link
-    let redirect = format!("http://localhost:3000/{short}");
+    let redirect = format!("http://localhost:3000/{id}");
     let resp = Response::builder()
         .status(201) // "Created" Status
         .header(LOCATION, &redirect)
