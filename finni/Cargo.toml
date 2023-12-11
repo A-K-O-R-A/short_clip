@@ -15,5 +15,6 @@ tokio = { version = "1.35.0", features = [
     "rt",
     "net",
     "macros",
+    "fs",
     "rt-multi-thread",
 ] }
