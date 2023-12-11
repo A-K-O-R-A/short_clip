@@ -15,8 +15,9 @@ use tokio::fs;
 use crate::util::*;
 
 static TOKENS_MAP: OnceLock<HashMap<String, String>> = OnceLock::new();
+static HOST: OnceLock<String> = OnceLock::new();
 
-pub async fn load_authorized_tokens() -> Result<(), std::io::Error> {
+pub async fn initialise_cells() -> Result<(), std::io::Error> {
     let str = fs::read_to_string("./.authorized_tokens").await?;
     let mut map = HashMap::new();
 
@@ -26,6 +27,10 @@ pub async fn load_authorized_tokens() -> Result<(), std::io::Error> {
     }
 
     TOKENS_MAP.set(map).unwrap();
+
+    if let Ok(host) = std::env::var("HOST") {
+        HOST.set(host).unwrap();
+    }
 
     Ok(())
 }
@@ -74,8 +79,13 @@ pub async fn handle_upload(
         fs::write(&metadata_path, metadata.to_string()?).await?;
     }
 
-    // Return the newly cerated link
-    let redirect = format!("http://localhost:3000/{id}");
+    // Return the newly cerated link depending on build
+    let redirect = if let Some(host) = HOST.get() {
+        format!("https://{host}/{id}")
+    } else {
+        format!("http://localhost:3000/{id}")
+    };
+
     let resp = Response::builder()
         .status(201) // "Created" Status
         .header(LOCATION, &redirect)
