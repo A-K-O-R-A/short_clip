@@ -1,3 +1,4 @@
 **/target
 **/contents
 **/.authorized_tokens
+**/.env
