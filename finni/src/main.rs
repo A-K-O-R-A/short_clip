@@ -37,7 +37,9 @@ async fn handle_req(
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let port = std::env::var("PORT").unwrap_or("3000".to_owned());
+    let port: u16 = port.parse()?;
+    let addr = SocketAddr::from(([127, 0, 0, 1], port));
 
     // Init authorized token list
     upload::load_authorized_tokens().await?;
