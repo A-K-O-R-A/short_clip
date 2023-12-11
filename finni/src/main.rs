@@ -39,6 +39,9 @@ async fn handle_req(
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
 
+    // Init authorized token list
+    upload::load_authorized_tokens().await?;
+
     // We create a TcpListener and bind it to 127.0.0.1:3000
     let listener = TcpListener::bind(addr).await?;
 

@@ -7,14 +7,33 @@ use shared::Metadata;
 
 use base64::{engine::general_purpose, Engine as _};
 use rustc_hash::FxHasher;
+use std::collections::HashMap;
 use std::hash::Hasher;
+use std::sync::OnceLock;
+use tokio::fs;
 
 use crate::util::*;
+
+static TOKENS_MAP: OnceLock<HashMap<String, String>> = OnceLock::new();
+
+pub async fn load_authorized_tokens() -> Result<(), std::io::Error> {
+    let str = fs::read_to_string("./.authorized_tokens").await?;
+    let mut map = HashMap::new();
+
+    for line in str.lines() {
+        let (token, username) =line.split_once(" ").expect("Invalid file format for .authorized_tokens file. Values should be lines of \"<token> <username>\"");
+        map.insert(token.to_owned(), username.to_owned());
+    }
+
+    TOKENS_MAP.set(map).unwrap();
+
+    Ok(())
+}
 
 pub async fn handle_upload(
     req: Request<hyper::body::Incoming>,
 ) -> Result<Response<Full<Bytes>>, Box<dyn std::error::Error>> {
-    let auth = match req.headers().get(AUTHORIZATION) {
+    let auth_header = match req.headers().get(AUTHORIZATION) {
         Some(v) => v.to_str()?.to_owned(),
         None => return Ok(bad_request("Missing Authorization header")),
     };
@@ -24,9 +43,12 @@ pub async fn handle_upload(
     };
 
     // TODO: Implement actual authentication
-    if auth != "uwu" {
-        return Ok(auth_denied());
-    }
+    let token_map = TOKENS_MAP.get().unwrap();
+    let token = auth_header.trim_start_matches("Bearer ");
+    let username = match token_map.get(token) {
+        Some(u) => u,
+        None => return Ok(auth_denied()),
+    };
 
     // Collect all of the data into single Bytes instance
     let frame_stream = req.into_body();
@@ -47,9 +69,9 @@ pub async fn handle_upload(
     // Only write file if it wasnt already saved
     if !data_path.try_exists()? {
         // Save metadata to associate content type
-        let metadata = Metadata::new(&auth, &content_type);
-        tokio::fs::write(&data_path, raw_data).await?;
-        tokio::fs::write(&metadata_path, metadata.to_string()?).await?;
+        let metadata = Metadata::new(username, &content_type);
+        fs::write(&data_path, raw_data).await?;
+        fs::write(&metadata_path, metadata.to_string()?).await?;
     }
 
     // Return the newly cerated link
