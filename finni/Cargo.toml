@@ -18,3 +18,4 @@ tokio = { version = "1.35.0", features = [
     "fs",
     "rt-multi-thread",
 ] }
+shared = { path = "../shared" }

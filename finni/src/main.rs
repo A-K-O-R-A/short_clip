@@ -4,6 +4,7 @@ use std::path::PathBuf;
 
 use http_body_util::Full;
 use hyper::body::Bytes;
+use hyper::header::{AUTHORIZATION, CONTENT_TYPE, LOCATION};
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
 use hyper::{Request, Response};
@@ -11,6 +12,7 @@ use hyper_util::rt::TokioIo;
 
 use http_body_util::BodyExt;
 use hyper::Method;
+use shared::Metadata;
 use tokio::net::TcpListener;
 
 use base64::{engine::general_purpose, Engine as _};
@@ -19,6 +21,13 @@ use std::hash::Hasher;
 
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
+
+fn bad_request(msg: &str) -> Response<Full<Bytes>> {
+    Response::builder()
+        .status(400)
+        .body(Full::new(Bytes::from(msg.to_owned())))
+        .unwrap()
+}
 
 fn auth_denied() -> Response<Full<Bytes>> {
     Response::builder()
@@ -94,40 +103,52 @@ async fn handle_download(
 async fn handle_upload(
     req: Request<hyper::body::Incoming>,
 ) -> Result<Response<Full<Bytes>>, Box<dyn std::error::Error>> {
-    if let Some(auth) = req.headers().get("Authorization") {
-        if auth != "uwu" {
-            return Ok(auth_denied());
-        }
+    let auth = match req.headers().get(AUTHORIZATION) {
+        Some(v) => v.to_str()?.to_owned(),
+        None => return Ok(bad_request("Missing Authorization header")),
+    };
+    let content_type = match req.headers().get(CONTENT_TYPE) {
+        Some(v) => v.to_str()?.to_owned(),
+        None => return Ok(bad_request("Missing Content-Type header")),
+    };
 
-        if let Some(ext) = req.headers().get("File-Extension") {
-            let ext = ext.to_str()?.to_owned();
-
-            let frame_stream = req.into_body();
-            let data = frame_stream.collect().await?;
-
-            let raw_data = &data.to_bytes()[..];
-            let mut hasher = FxHasher::default();
-            hasher.write(raw_data);
-
-            let hash = hasher.finish();
-            let short = general_purpose::URL_SAFE_NO_PAD.encode(hash.to_le_bytes());
-
-            let path = content_path().join(&(short.clone() + "." + &ext));
-
-            // Only write file if it wasnt already saved
-            if let Err(_) = File::open(&path).await {
-                tokio::fs::write(&path, raw_data).await?;
-            }
-
-            return Ok(Response::new(Full::new(Bytes::from(format!(
-                "http://localhost:3000/{short}"
-            )))));
-        }
-
-        Ok(Response::new(Full::new(Bytes::from("Hello, World!"))))
-    } else {
-        Ok(auth_denied())
+    // TODO: Implement actual authentication
+    if auth != "uwu" {
+        return Ok(auth_denied());
     }
+
+    // Collect all of the data into single Bytes instance
+    let frame_stream = req.into_body();
+    let data = frame_stream.collect().await?;
+    let raw_data = &data.to_bytes()[..];
+
+    // Hash the data
+    let mut hasher = FxHasher::default();
+    hasher.write(raw_data);
+    let hash = hasher.finish();
+
+    // Create short alias for this data
+    let short = general_purpose::URL_SAFE_NO_PAD.encode(hash.to_le_bytes());
+
+    let data_path = content_path().join(&short);
+    let metadata_path = data_path.with_extension("json");
+
+    // Only write file if it wasnt already saved
+    if let Err(_) = File::open(&data_path).await {
+        // Save metadata to associate content type
+        let metadata = Metadata::new(&auth, &content_type);
+        tokio::fs::write(&data_path, raw_data).await?;
+        tokio::fs::write(&metadata_path, metadata.to_string()?).await?;
+    }
+
+    // Return the newly cerated link
+    let redirect = format!("http://localhost:3000/{short}");
+    let resp = Response::builder()
+        .status(201) // "Created" Status
+        .header(LOCATION, &redirect)
+        .body(Full::new(Bytes::from(redirect)))?;
+
+    return Ok(resp);
 }
 
 #[tokio::main]

@@ -11,7 +11,7 @@ pub struct Metadata {
 }
 
 impl Metadata {
-    pub fn new(author: String, content_type: String) -> Self {
+    pub fn new(author: &str, content_type: &str) -> Self {
         let start = SystemTime::now();
         let since_the_epoch = start
             .duration_since(UNIX_EPOCH)
@@ -20,8 +20,8 @@ impl Metadata {
         Self {
             version: 1,
             created_at: since_the_epoch.as_secs(),
-            author,
-            content_type,
+            author: author.to_owned(),
+            content_type: content_type.to_owned(),
         }
     }
 

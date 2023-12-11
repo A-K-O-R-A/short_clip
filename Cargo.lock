@@ -330,6 +330,7 @@ dependencies = [
  "hyper",
  "hyper-util",
  "rustc-hash",
+ "shared",
  "tokio",
 ]
 
