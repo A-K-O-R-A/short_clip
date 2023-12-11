@@ -1,4 +1,4 @@
 [workspace]
 resolver = "2"
-members = ["finni", "short_clip"]
-default-members = ["short_clip"]
+members = ["finni", "short_clip", "shared"]
+default-members = ["short_clip", "shared"]
