@@ -6,7 +6,7 @@ mod upload;
 use config::{load_config, Config};
 use upload::handle_hotkey;
 
-mod hotkey;
+mod sys;
 
 pub static CONFIG: OnceLock<Config> = OnceLock::new();
 
@@ -14,5 +14,5 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Load config
     CONFIG.set(load_config()).unwrap();
 
-    hotkey::create_listener(handle_hotkey)
+    sys::hotkey::create_listener(handle_hotkey)
 }

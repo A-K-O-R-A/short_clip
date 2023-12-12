@@ -1,9 +1,9 @@
 #[cfg(target_os = "windows")]
-pub mod windows;
+mod windows;
 #[cfg(target_os = "windows")]
-pub use windows::create_listener;
+pub use windows::hotkey;
 
 #[cfg(target_os = "linux")]
 pub mod x11;
 #[cfg(target_os = "linux")]
-pub use x11::create_listener;
+pub use x11::hotkey;
