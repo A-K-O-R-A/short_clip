@@ -8,7 +8,6 @@ edition = "2021"
 [dependencies]
 arboard = "3.3.0"
 ureq = { version = "2.9.1", features = ["charset", "gzip"] }
-png = "0.17.10"
 mime_guess = { workspace = true }
 
 zip = "0.6.6"

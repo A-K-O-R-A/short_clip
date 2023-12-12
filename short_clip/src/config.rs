@@ -19,6 +19,8 @@ pub fn load_config() -> Config {
 
 #[cfg(target_os = "linux")]
 fn config_path() -> PathBuf {
+    use std::env;
+
     let home = PathBuf::from(env::var("HOME").expect("No HOME set"));
     let mut config_folder_path = home.join(".config");
 

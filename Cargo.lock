@@ -1269,7 +1269,6 @@ dependencies = [
  "clipboard-win 5.0.0",
  "image",
  "mime_guess",
- "png",
  "serde",
  "serde_json",
  "ureq",
