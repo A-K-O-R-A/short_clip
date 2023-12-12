@@ -70,8 +70,6 @@ pub fn read_clipboard() -> Result<ClipboardContent, Box<dyn std::error::Error>> 
             )));
         }
     } else if let Ok(text) = get_clipboard::<String, _>(formats::Unicode) {
-        println!("{:?}", text);
-
         content = ClipboardContent {
             content_type: "text/plain".to_owned(),
             data: text.into_bytes(),
