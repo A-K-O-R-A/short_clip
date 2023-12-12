@@ -1,10 +1,4 @@
-use std::{
-    fs::{DirEntry, File},
-    io::{Read, Seek, Write},
-    path::Path,
-};
-
-use zip::write::FileOptions;
+use std::path::Path;
 
 pub fn guess_path_content(path: &Path) -> String {
     if let Some(ext) = path.extension() {
@@ -19,8 +13,16 @@ pub fn guess_path_content(path: &Path) -> String {
     }
 }
 
-/// Copie from https://github.com/zip-rs/zip/blob/3e88fe66c941d411cff5cf49778ba08c2ed93801/examples/write_dir.rs#L65
-#[allow(dead_code)]
+// Copied from https://github.com/zip-rs/zip/blob/3e88fe66c941d411cff5cf49778ba08c2ed93801/examples/write_dir.rs#L65
+/*
+use std::{
+    fs::{DirEntry, File},
+    io::{Read, Seek, Write},
+};
+
+use zip::write::FileOptions;
+
+
 fn zip_dir<T>(
     it: &mut dyn Iterator<Item = DirEntry>,
     prefix: &str,
@@ -62,3 +64,4 @@ where
     zip.finish()?;
     Result::Ok(())
 }
+*/
