@@ -70,8 +70,18 @@ pub fn read_clipboard() -> Result<ClipboardContent, Box<dyn std::error::Error>> 
             )));
         }
     } else if let Ok(text) = get_clipboard::<String, _>(formats::Unicode) {
+        let content_type: String;
+
+        // Check if the content is a valid url
+        if let Ok(_) = url::Url::parse(&clipboard_content) {
+            // Let the backend know that this is a url
+            content_type = "text/uri-list".to_owned();
+        } else {
+            content_type = "text/plain".to_owned();
+        }
+
         content = ClipboardContent {
-            content_type: "text/plain".to_owned(),
+            content_type,
             data: text.into_bytes(),
         }
     } else {
