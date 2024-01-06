@@ -1,5 +1,5 @@
 [package]
-name = "short_clip"
+name = "short-clip-client"
 version = "0.1.0"
 edition = "2021"
 

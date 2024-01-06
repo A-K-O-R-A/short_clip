@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
-members = ["finni", "short_clip", "shared"]
-default-members = ["short_clip", "shared"]
+members = ["client", "server", "shared"]
+default-members = ["client", "shared"]
 
 [workspace.dependencies]
 serde = { version = "1.0.193", features = ["derive"] }
