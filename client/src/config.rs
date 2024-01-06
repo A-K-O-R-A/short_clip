@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf};
+use std::{fs, path::PathBuf, sync::OnceLock};
 
 use serde::{Deserialize, Serialize};
 
@@ -8,13 +8,17 @@ pub struct Config {
     pub token: String,
 }
 
-pub fn load_config() -> Config {
-    let config_path = config_path();
+static CONFIG: OnceLock<Config> = OnceLock::new();
 
-    let data = fs::read(&config_path)
-        .expect(format!("Error reading config at {}", config_path.display()).as_str());
+pub fn load_config() -> &'static Config {
+    CONFIG.get_or_init(|| {
+        let config_path = config_path();
 
-    serde_json::from_slice(&data).unwrap()
+        let data = fs::read(&config_path)
+            .expect(format!("Error reading config at {}", config_path.display()).as_str());
+
+        serde_json::from_slice(&data).unwrap()
+    })
 }
 
 #[cfg(target_os = "linux")]

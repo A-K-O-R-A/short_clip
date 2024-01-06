@@ -1,6 +1,6 @@
 use crate::{
+    config::load_config,
     sys::clipboard::{read_clipboard, set_clipboard},
-    CONFIG,
 };
 
 pub struct ClipboardContent {
@@ -8,7 +8,7 @@ pub struct ClipboardContent {
     pub data: Vec<u8>,
 }
 
-pub fn handle_hotkey() -> Result<(), Box<dyn std::error::Error>> {
+pub fn upload_clipboard() -> Result<(), Box<dyn std::error::Error>> {
     let content = read_clipboard()?;
 
     if let Some(link) = upload_contents(&content.data, &content.content_type) {
@@ -21,7 +21,7 @@ pub fn handle_hotkey() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn upload_contents(data: &[u8], content_type: &str) -> Option<String> {
-    let config = CONFIG.get().unwrap();
+    let config = load_config();
 
     let result = ureq::post(&config.host)
         .set("authorization", &config.token)
