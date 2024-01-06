@@ -32,6 +32,18 @@ impl Metadata {
         }
     }
 
+    pub fn is_expired(&self) -> bool {
+        let now = SystemTime::now();
+        let since_the_epoch = now.duration_since(UNIX_EPOCH).expect("Time went backwards");
+        let current_time = since_the_epoch.as_secs();
+
+        if let Some(expires_at) = self.expires_at {
+            current_time > expires_at
+        } else {
+            false
+        }
+    }
+
     pub fn from_str(s: &str) -> Result<Metadata, serde_json::Error> {
         serde_json::from_str(s)
     }

@@ -31,8 +31,17 @@ pub async fn handle_download(
         let metadata = tokio::fs::read(entry.path().with_extension("json")).await?;
         let metadata = Metadata::from_slice(&metadata)?;
 
+        // Check if this file is expired and delete it
+        if metadata.is_expired() {
+            tokio::fs::remove_file(entry.path()).await?;
+            tokio::fs::remove_file(entry.path().with_extension("json")).await?;
+
+            return Ok(not_found());
+        }
+
         // Read data
         let mut file = File::open(entry.path()).await?;
+
         let mut v: Vec<u8> = Vec::with_capacity(file.metadata().await?.len() as usize);
         file.read_to_end(&mut v).await?;
 
