@@ -46,6 +46,10 @@ pub async fn handle_upload(
         Some(v) => v.to_str()?.to_owned(),
         None => return Ok(bad_request("Missing Content-Type header")),
     };
+    let ttl = match req.headers().get("ttl") {
+        Some(v) => Some(v.to_str()?.parse::<u64>()?),
+        None => None,
+    };
 
     // TODO: Implement actual authentication
     let token_map = TOKENS_MAP.get().unwrap();
@@ -74,7 +78,7 @@ pub async fn handle_upload(
     // Only write file if it wasnt already saved
     if !data_path.try_exists()? {
         // Save metadata to associate content type
-        let metadata = Metadata::new(username, &content_type);
+        let metadata = Metadata::new(username, &content_type, ttl);
         fs::write(&data_path, raw_data).await?;
         fs::write(&metadata_path, metadata.to_string()?).await?;
     }

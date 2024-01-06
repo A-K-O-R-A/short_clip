@@ -6,12 +6,18 @@ use serde::{Deserialize, Serialize};
 pub struct Metadata {
     pub version: u8,
     pub created_at: u64,
+    pub expires_at: Option<u64>,
     pub author: String,
     pub content_type: String,
 }
 
 impl Metadata {
-    pub fn new(author: &str, content_type: &str) -> Self {
+    /// Creates a new Metadata struct
+    ///
+    /// `content_type` should be a valid mime type
+    ///
+    /// `ttl` should be supplied in seconds
+    pub fn new(author: &str, content_type: &str, ttl: Option<u64>) -> Self {
         let start = SystemTime::now();
         let since_the_epoch = start
             .duration_since(UNIX_EPOCH)
@@ -20,6 +26,7 @@ impl Metadata {
         Self {
             version: 1,
             created_at: since_the_epoch.as_secs(),
+            expires_at: ttl.map(|t| since_the_epoch.as_secs() + t),
             author: author.to_owned(),
             content_type: content_type.to_owned(),
         }
